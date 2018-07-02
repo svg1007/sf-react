@@ -1,0 +1,40 @@
+- hosts: "{{ host }}"
+  gather_facts: false
+
+  environment:
+    LANG: "ru_RU.UTF-8"
+  
+  tasks:
+
+  - name: Run with inline v2 compose
+    docker_service:
+      build: yes
+      project_name: symfony
+      definition:
+        version: '2'
+        services:
+          mysql:
+            image: mysql:5.7
+            container_name: mysql
+            environment:
+              - MYSQL_ROOT_PASSWORD=mypw
+            ports:
+              - "3306:3306"
+          sf-react:
+            image: svg1007/sf-react
+            container_name: sf-react
+            depends_on:
+              - mysql
+          nginx:
+            image: nginx:latest
+            container_name: nginx
+            volumes:
+              - ./nginx:/etc/nginx/conf.d
+            ports:
+              - "80:80"
+
+  - assert:
+    that:
+      - "sf-react.symfony_sf-react_1.state.running"
+      - "nginx.symfony_nginx_1.state.running"
+      - "mysql.symfony_mysql_1.state.running"
